@@ -1,12 +1,14 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize debugging
-    window.AuthDebugger.info('🚀 Login page loaded');
+    window.AuthDebugger.info('🚀 Signup page loaded');
     window.AuthDebugger.updateStatus('subdomain', window.location.hostname);
     
-    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
-    const loginBtn = document.querySelector('.login-btn');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    const termsCheckbox = document.getElementById('terms');
+    const signupBtn = document.querySelector('.login-btn');
     const socialButtons = document.querySelectorAll('.social-btn');
 
     // Get Supabase configuration from environment config
@@ -39,14 +41,14 @@ document.addEventListener('DOMContentLoaded', function() {
     window.AuthDebugger.testDatabaseConnection(supabase, supabaseConfig);
     
     // Update page title to show which database
-    document.querySelector('.logo h1').textContent = `Welcome to ${supabaseConfig.name}`;
-    document.querySelector('.logo p').textContent = `Please sign in to your ${supabaseConfig.name} account`;
+    document.getElementById('signupTitle').textContent = `Create Account for ${supabaseConfig.name}`;
+    document.getElementById('signupSubtitle').textContent = `Join ${supabaseConfig.name} today`;
     
     // Add debug info to console
-    console.log('Connected to:', supabaseConfig.name);
+    console.log('Signup for:', supabaseConfig.name);
     console.log('Hostname:', window.location.hostname);
 
-    // Form validation
+    // Form validation functions
     function validateEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
@@ -54,6 +56,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function validatePassword(password) {
         return password.length >= 6;
+    }
+
+    function validatePasswordMatch(password, confirmPassword) {
+        return password === confirmPassword;
     }
 
     function showError(input, message) {
@@ -99,22 +105,45 @@ document.addEventListener('DOMContentLoaded', function() {
             if (validatePassword(this.value)) {
                 clearError(this);
             }
+            // Also validate confirm password if it has a value
+            if (confirmPasswordInput.value) {
+                if (validatePasswordMatch(this.value, confirmPasswordInput.value)) {
+                    clearError(confirmPasswordInput);
+                } else {
+                    showError(confirmPasswordInput, 'Passwords do not match');
+                }
+            }
+        } else {
+            clearError(this);
+        }
+    });
+
+    confirmPasswordInput.addEventListener('input', function() {
+        if (this.value) {
+            if (validatePasswordMatch(passwordInput.value, this.value)) {
+                clearError(this);
+            } else {
+                showError(this, 'Passwords do not match');
+            }
         } else {
             clearError(this);
         }
     });
 
     // Form submission
-    loginForm.addEventListener('submit', async function(e) {
+    signupForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const email = emailInput.value.trim();
         const password = passwordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        const termsAccepted = termsCheckbox.checked;
         let isValid = true;
 
         // Clear previous errors
         clearError(emailInput);
         clearError(passwordInput);
+        clearError(confirmPasswordInput);
 
         // Validate email
         if (!email) {
@@ -134,12 +163,27 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
 
+        // Validate confirm password
+        if (!confirmPassword) {
+            showError(confirmPasswordInput, 'Please confirm your password');
+            isValid = false;
+        } else if (!validatePasswordMatch(password, confirmPassword)) {
+            showError(confirmPasswordInput, 'Passwords do not match');
+            isValid = false;
+        }
+
+        // Validate terms
+        if (!termsAccepted) {
+            showErrorMessage('Please accept the Terms & Conditions');
+            isValid = false;
+        }
+
         if (isValid) {
             // Show loading state
-            loginBtn.classList.add('loading');
-            loginBtn.textContent = 'Signing In...';
+            signupBtn.classList.add('loading');
+            signupBtn.textContent = 'Creating Account...';
             
-            window.AuthDebugger.info('🔐 Starting login process...', {
+            window.AuthDebugger.info('📝 Starting signup process...', {
                 email: email,
                 database: supabaseConfig.name,
                 hostname: window.location.hostname
@@ -147,56 +191,38 @@ document.addEventListener('DOMContentLoaded', function() {
             
             try {
                 // Use the debug test method for comprehensive logging
-                const authResult = await window.AuthDebugger.testAuth(supabase, email, password, 'login');
+                const authResult = await window.AuthDebugger.testAuth(supabase, email, password, 'signup');
                 
                 if (authResult.success) {
-                    // Successful login
-                    window.AuthDebugger.success(`✅ Login successful via ${authResult.method} method`);
-                    showSuccessMessage(`Login successful! Welcome to ${supabaseConfig.name}`);
+                    // Successful signup
+                    window.AuthDebugger.success(`✅ Signup successful via ${authResult.method} method`);
+                    showSuccessMessage(`Account created successfully for ${supabaseConfig.name}!`);
                     
-                    // Store user session info
-                    const sessionData = {
-                        user: authResult.method === 'supabase' ? authResult.data.user : {
-                            email: authResult.data.email,
-                            id: authResult.data.id || 'custom-' + Date.now()
-                        },
-                        database: supabaseConfig.name,
-                        loginTime: new Date().toISOString(),
-                        authType: authResult.method
-                    };
-                    
-                    localStorage.setItem('userSession', JSON.stringify(sessionData));
-                    window.AuthDebugger.info('💾 Session data stored', sessionData);
-                    
-                    // Save email if remember me is checked
-                    if (document.getElementById('remember').checked) {
-                        localStorage.setItem('rememberedEmail', email);
-                        window.AuthDebugger.info('💾 Email saved for remember me');
-                    }
+                    window.AuthDebugger.info('User data from signup', authResult.data);
                     
                     // Reset button state
-                    loginBtn.classList.remove('loading');
-                    loginBtn.textContent = 'Sign In';
+                    signupBtn.classList.remove('loading');
+                    signupBtn.textContent = 'Create Account';
                     
-                    // Redirect to dashboard page after 1.5 seconds
+                    // Redirect to login page after 2 seconds
                     setTimeout(() => {
-                        window.AuthDebugger.info('🔄 Redirecting to dashboard...');
-                        window.location.href = '/dashboard.html';
-                    }, 1500);
+                        window.AuthDebugger.info('🔄 Redirecting to login page...');
+                        window.location.href = '/index.html';
+                    }, 2000);
                 } else {
-                    // Login failed
-                    window.AuthDebugger.error('❌ Login failed for all methods', authResult.error);
+                    // Signup failed
+                    window.AuthDebugger.error('❌ Signup failed', authResult.error);
                     
                     // Reset button state
-                    loginBtn.classList.remove('loading');
-                    loginBtn.textContent = 'Sign In';
+                    signupBtn.classList.remove('loading');
+                    signupBtn.textContent = 'Create Account';
                     
-                    showErrorMessage('Invalid email or password. Please check your credentials.');
+                    showErrorMessage(`Signup failed: ${authResult.error?.message || 'Unknown error'}`);
                 }
             } catch (err) {
                 // Reset button state
-                loginBtn.classList.remove('loading');
-                loginBtn.textContent = 'Sign In';
+                signupBtn.classList.remove('loading');
+                signupBtn.textContent = 'Create Account';
                 
                 showErrorMessage('Network error. Please try again.');
                 console.error('Network error:', err);
@@ -204,30 +230,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Social login handlers
+    // Social signup handlers
     socialButtons.forEach(button => {
         button.addEventListener('click', function() {
             const provider = this.classList.contains('google-btn') ? 'Google' : 'GitHub';
-            showInfoMessage(`${provider} login clicked - integrate with OAuth provider`);
+            showInfoMessage(`${provider} signup clicked - integrate with OAuth provider`);
             
-            // In a real application, you would:
-            // 1. Redirect to OAuth provider
-            // 2. Handle the callback
-            // 3. Process the authentication result
-            
-            console.log(`${provider} login initiated`);
+            console.log(`${provider} signup initiated`);
         });
-    });
-
-    // Forgot password handler
-    document.querySelector('.forgot-password').addEventListener('click', function(e) {
-        e.preventDefault();
-        showInfoMessage('Forgot password clicked - implement password reset flow');
-        
-        // In a real application, you would:
-        // 1. Show a modal or redirect to password reset page
-        // 2. Send reset email
-        // 3. Handle reset process
     });
 
     // Utility functions for showing messages
@@ -287,30 +297,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, timeout);
     }
-
-    // Remember me functionality
-    const rememberCheckbox = document.getElementById('remember');
-    
-    // Load saved email if "remember me" was checked
-    const savedEmail = localStorage.getItem('rememberedEmail');
-    if (savedEmail) {
-        emailInput.value = savedEmail;
-        rememberCheckbox.checked = true;
-    }
-
-    // Save/clear email based on remember me checkbox
-    rememberCheckbox.addEventListener('change', function() {
-        if (!this.checked) {
-            localStorage.removeItem('rememberedEmail');
-        }
-    });
-
-    // Save email when form is submitted if remember me is checked
-    loginForm.addEventListener('submit', function() {
-        if (rememberCheckbox.checked) {
-            localStorage.setItem('rememberedEmail', emailInput.value);
-        }
-    });
 
     // Add smooth animations
     const inputs = document.querySelectorAll('input');

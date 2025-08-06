@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="debug.js"></script>
 </head>
 <body>
     <div class="container">
@@ -43,17 +44,24 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize debugging
+            window.AuthDebugger.info('🚀 Dashboard page loaded');
+            window.AuthDebugger.updateStatus('subdomain', window.location.hostname);
+            
             // Get stored user session
+            window.AuthDebugger.info('🔍 Checking for user session...');
             const userSession = localStorage.getItem('userSession');
             
             if (!userSession) {
                 // No session found, redirect to login
+                window.AuthDebugger.warning('⚠️ No user session found, redirecting to login');
                 window.location.href = '/index.html';
                 return;
             }
             
             try {
                 const session = JSON.parse(userSession);
+                window.AuthDebugger.success('✅ User session found', session);
                 
                 // Update dashboard with user info
                 document.getElementById('userEmail').textContent = session.user.email || 'N/A';
@@ -65,7 +73,10 @@
                 document.getElementById('welcomeTitle').textContent = `Welcome to ${session.database}`;
                 document.getElementById('databaseInfo').textContent = `You are securely connected to ${session.database}`;
                 
+                window.AuthDebugger.info('📋 Dashboard updated with user information');
+                
             } catch (error) {
+                window.AuthDebugger.error('❌ Error parsing user session', error);
                 console.error('Error parsing user session:', error);
                 localStorage.removeItem('userSession');
                 window.location.href = '/index.html';
@@ -73,17 +84,23 @@
             
             // Logout functionality
             document.getElementById('logoutBtn').addEventListener('click', async function() {
+                window.AuthDebugger.info('🚪 Logout initiated');
+                
                 try {
                     // Clear local storage
                     localStorage.removeItem('userSession');
                     localStorage.removeItem('rememberedEmail');
                     
+                    window.AuthDebugger.success('✅ Local session cleared');
+                    
                     // Show logout message
                     alert('You have been logged out successfully.');
                     
                     // Redirect to login page
+                    window.AuthDebugger.info('🔄 Redirecting to login page...');
                     window.location.href = '/index.html';
                 } catch (error) {
+                    window.AuthDebugger.error('❌ Logout error', error);
                     console.error('Logout error:', error);
                     // Force redirect even if there's an error
                     window.location.href = '/index.html';

@@ -45,6 +45,7 @@ database2: {
 ## Database Setup:
 
 Make sure both your Supabase projects have:
+
 - A table named `users` (or update the auth method if using different table)
 - Email/password authentication enabled
 - Row Level Security (RLS) configured appropriately
@@ -66,6 +67,7 @@ Make sure both your Supabase projects have:
 ## Configuration Validation:
 
 The system will automatically validate your configuration and show warnings if:
+
 - URLs still contain placeholder values
 - Keys are not properly set
 - Required fields are missing

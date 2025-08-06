@@ -24,6 +24,7 @@ A modern, responsive login landing page built with HTML, CSS, and JavaScript.
 ## Getting Started
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/ooksaim/database.git
    cd database
@@ -36,14 +37,17 @@ A modern, responsive login landing page built with HTML, CSS, and JavaScript.
 ## Customization
 
 ### Colors & Branding
+
 - Modify gradient colors in `styles.css`
 - Update logo/title text in `index.html`
 
 ### Form Validation
+
 - Adjust validation rules in `script.js`
 - Customize error messages
 
 ### Social Providers
+
 - Add/remove social login options in HTML
 - Integrate with OAuth providers in JavaScript
 
@@ -63,6 +67,7 @@ A modern, responsive login landing page built with HTML, CSS, and JavaScript.
 ## Demo
 
 The login page includes:
+
 - Email and password fields with validation
 - Remember me functionality
 - Forgot password link
