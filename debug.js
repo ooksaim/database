@@ -5,190 +5,212 @@ class DebugLogger {
     constructor() {
         this.logs = [];
         this.debugMode = true; // Set to false to disable debugging
-        this.createDebugPanel();
+        this.panelCreated = false;
+        
+        // Wait for DOM to be ready before creating panel
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.createDebugPanel();
+            });
+        } else {
+            this.createDebugPanel();
+        }
     }
 
     // Create visual debug panel
     createDebugPanel() {
-        if (!this.debugMode) return;
-
-        // Create debug panel container
-        const debugPanel = document.createElement('div');
-        debugPanel.id = 'debug-panel';
-        debugPanel.innerHTML = `
-            <div class="debug-header">
-                <h3>🔧 Debug Console</h3>
-                <button id="toggle-debug" class="debug-btn">Hide</button>
-                <button id="clear-debug" class="debug-btn">Clear</button>
-            </div>
-            <div class="debug-content">
-                <div class="debug-status">
-                    <div class="status-item">
-                        <span class="status-label">Subdomain:</span>
-                        <span id="debug-subdomain" class="status-value">-</span>
+        if (!this.debugMode || this.panelCreated) return;
+        
+        console.log('🔧 Creating debug panel...');
+        
+        try {
+            // Create debug panel container
+            const debugPanel = document.createElement('div');
+            debugPanel.id = 'debug-panel';
+            debugPanel.innerHTML = `
+                <div class="debug-header">
+                    <h3>🔧 Debug Console</h3>
+                    <button id="toggle-debug" class="debug-btn">Hide</button>
+                    <button id="clear-debug" class="debug-btn">Clear</button>
+                </div>
+                <div class="debug-content">
+                    <div class="debug-status">
+                        <div class="status-item">
+                            <span class="status-label">Subdomain:</span>
+                            <span id="debug-subdomain" class="status-value">-</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Database:</span>
+                            <span id="debug-database" class="status-value">-</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Connection:</span>
+                            <span id="debug-connection" class="status-value">-</span>
+                        </div>
                     </div>
-                    <div class="status-item">
-                        <span class="status-label">Database:</span>
-                        <span id="debug-database" class="status-value">-</span>
-                    </div>
-                    <div class="status-item">
-                        <span class="status-label">Connection:</span>
-                        <span id="debug-connection" class="status-value">-</span>
+                    <div id="debug-logs" class="debug-logs">
+                        <div class="debug-log info">
+                            <span class="debug-timestamp">[${new Date().toLocaleTimeString()}]</span> Debug panel initialized
+                        </div>
                     </div>
                 </div>
-                <div id="debug-logs" class="debug-logs"></div>
-            </div>
-        `;
+                `;
 
-        // Add styles
-        const style = document.createElement('style');
-        style.textContent = `
-            #debug-panel {
-                position: fixed;
-                top: 10px;
-                left: 10px;
-                width: 400px;
-                max-height: 500px;
-                background: #1a1a1a;
-                color: #00ff00;
-                border: 1px solid #333;
-                border-radius: 8px;
-                font-family: 'Courier New', monospace;
-                font-size: 12px;
-                z-index: 10000;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            }
+            // Add styles
+            const style = document.createElement('style');
+            style.textContent = `
+                #debug-panel {
+                    position: fixed;
+                    top: 10px;
+                    left: 10px;
+                    width: 400px;
+                    max-height: 500px;
+                    background: #1a1a1a;
+                    color: #00ff00;
+                    border: 1px solid #333;
+                    border-radius: 8px;
+                    font-family: 'Courier New', monospace;
+                    font-size: 12px;
+                    z-index: 10000;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                }
+                
+                .debug-header {
+                    background: #333;
+                    padding: 8px 12px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    border-bottom: 1px solid #555;
+                }
+                
+                .debug-header h3 {
+                    margin: 0;
+                    font-size: 14px;
+                    color: #fff;
+                }
+                
+                .debug-btn {
+                    background: #555;
+                    color: #fff;
+                    border: none;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 10px;
+                    margin-left: 5px;
+                }
+                
+                .debug-btn:hover {
+                    background: #666;
+                }
+                
+                .debug-content {
+                    padding: 12px;
+                    max-height: 400px;
+                    overflow-y: auto;
+                }
+                
+                .debug-status {
+                    background: #262626;
+                    padding: 8px;
+                    border-radius: 4px;
+                    margin-bottom: 12px;
+                }
+                
+                .status-item {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 4px;
+                }
+                
+                .status-label {
+                    color: #888;
+                }
+                
+                .status-value {
+                    color: #00ff00;
+                    font-weight: bold;
+                }
+                
+                .status-value.error {
+                    color: #ff4444;
+                }
+                
+                .status-value.warning {
+                    color: #ffaa00;
+                }
+                
+                .debug-logs {
+                    background: #0a0a0a;
+                    padding: 8px;
+                    border-radius: 4px;
+                    max-height: 250px;
+                    overflow-y: auto;
+                }
+                
+                .debug-log {
+                    margin-bottom: 6px;
+                    padding: 4px;
+                    border-left: 3px solid #555;
+                    padding-left: 8px;
+                }
+                
+                .debug-log.success {
+                    border-left-color: #00ff00;
+                    color: #00ff00;
+                }
+                
+                .debug-log.error {
+                    border-left-color: #ff4444;
+                    color: #ff4444;
+                }
+                
+                .debug-log.warning {
+                    border-left-color: #ffaa00;
+                    color: #ffaa00;
+                }
+                
+                .debug-log.info {
+                    border-left-color: #00aaff;
+                    color: #00aaff;
+                }
+                
+                .debug-timestamp {
+                    color: #666;
+                    font-size: 10px;
+                }
+                
+                .debug-panel-hidden {
+                    transform: translateX(-350px);
+                }
+            `;
             
-            .debug-header {
-                background: #333;
-                padding: 8px 12px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                border-bottom: 1px solid #555;
-            }
-            
-            .debug-header h3 {
-                margin: 0;
-                font-size: 14px;
-                color: #fff;
-            }
-            
-            .debug-btn {
-                background: #555;
-                color: #fff;
-                border: none;
-                padding: 4px 8px;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 10px;
-                margin-left: 5px;
-            }
-            
-            .debug-btn:hover {
-                background: #666;
-            }
-            
-            .debug-content {
-                padding: 12px;
-                max-height: 400px;
-                overflow-y: auto;
-            }
-            
-            .debug-status {
-                background: #262626;
-                padding: 8px;
-                border-radius: 4px;
-                margin-bottom: 12px;
-            }
-            
-            .status-item {
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 4px;
-            }
-            
-            .status-label {
-                color: #888;
-            }
-            
-            .status-value {
-                color: #00ff00;
-                font-weight: bold;
-            }
-            
-            .status-value.error {
-                color: #ff4444;
-            }
-            
-            .status-value.warning {
-                color: #ffaa00;
-            }
-            
-            .debug-logs {
-                background: #0a0a0a;
-                padding: 8px;
-                border-radius: 4px;
-                max-height: 250px;
-                overflow-y: auto;
-            }
-            
-            .debug-log {
-                margin-bottom: 6px;
-                padding: 4px;
-                border-left: 3px solid #555;
-                padding-left: 8px;
-            }
-            
-            .debug-log.success {
-                border-left-color: #00ff00;
-                color: #00ff00;
-            }
-            
-            .debug-log.error {
-                border-left-color: #ff4444;
-                color: #ff4444;
-            }
-            
-            .debug-log.warning {
-                border-left-color: #ffaa00;
-                color: #ffaa00;
-            }
-            
-            .debug-log.info {
-                border-left-color: #00aaff;
-                color: #00aaff;
-            }
-            
-            .debug-timestamp {
-                color: #666;
-                font-size: 10px;
-            }
-            
-            .debug-panel-hidden {
-                transform: translateX(-350px);
-            }
-        `;
-        
-        document.head.appendChild(style);
-        document.body.appendChild(debugPanel);
+            document.head.appendChild(style);
+            document.body.appendChild(debugPanel);
+            this.panelCreated = true;
 
-        // Add event listeners
-        document.getElementById('toggle-debug').addEventListener('click', () => {
-            const panel = document.getElementById('debug-panel');
-            const btn = document.getElementById('toggle-debug');
-            if (panel.classList.contains('debug-panel-hidden')) {
-                panel.classList.remove('debug-panel-hidden');
-                btn.textContent = 'Hide';
-            } else {
-                panel.classList.add('debug-panel-hidden');
-                btn.textContent = 'Show';
-            }
-        });
+            // Add event listeners
+            document.getElementById('toggle-debug').addEventListener('click', () => {
+                const panel = document.getElementById('debug-panel');
+                const btn = document.getElementById('toggle-debug');
+                if (panel.classList.contains('debug-panel-hidden')) {
+                    panel.classList.remove('debug-panel-hidden');
+                    btn.textContent = 'Hide';
+                } else {
+                    panel.classList.add('debug-panel-hidden');
+                    btn.textContent = 'Show';
+                }
+            });
 
-        document.getElementById('clear-debug').addEventListener('click', () => {
-            this.clearLogs();
-        });
+            document.getElementById('clear-debug').addEventListener('click', () => {
+                this.clearLogs();
+            });
+            
+            console.log('✅ Debug panel created successfully');
+        } catch (error) {
+            console.error('❌ Failed to create debug panel:', error);
+        }
     }
 
     // Update status indicators
