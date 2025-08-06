@@ -5,6 +5,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginBtn = document.querySelector('.login-btn');
     const socialButtons = document.querySelectorAll('.social-btn');
 
+    // Get Supabase configuration from environment config
+    const supabaseConfig = window.EnvironmentConfig.getSupabaseConfig();
+    
+    // Validate configuration
+    if (!window.EnvironmentConfig.validateConfig(supabaseConfig)) {
+        console.error('Supabase configuration is not properly set up. Please update config.js');
+        showErrorMessage('Configuration error. Please check the setup.');
+    }
+    
+    // Initialize Supabase client
+    const supabase = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+    
+    // Update page title to show which database
+    document.querySelector('.logo h1').textContent = `Welcome to ${supabaseConfig.name}`;
+    document.querySelector('.logo p').textContent = `Please sign in to your ${supabaseConfig.name} account`;
+    
+    // Add debug info to console
+    console.log('Connected to:', supabaseConfig.name);
+    console.log('Hostname:', window.location.hostname);
+
     // Form validation
     function validateEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -64,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Form submission
-    loginForm.addEventListener('submit', function(e) {
+    loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const email = emailInput.value.trim();
@@ -98,22 +118,61 @@ document.addEventListener('DOMContentLoaded', function() {
             loginBtn.classList.add('loading');
             loginBtn.textContent = 'Signing In...';
             
-            // Simulate API call
-            setTimeout(() => {
+            try {
+                // Authenticate with Supabase
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    // Reset button state
+                    loginBtn.classList.remove('loading');
+                    loginBtn.textContent = 'Sign In';
+                    
+                    // Show error message
+                    showErrorMessage(`Authentication failed: ${error.message}`);
+                    console.error('Login error:', error);
+                } else if (data.user) {
+                    // Successful login
+                    showSuccessMessage(`Login successful! Welcome to ${supabaseConfig.name}`);
+                    
+                    // Store user session info
+                    localStorage.setItem('userSession', JSON.stringify({
+                        user: data.user,
+                        database: supabaseConfig.name,
+                        loginTime: new Date().toISOString()
+                    }));
+                    
+                    // Save email if remember me is checked
+                    if (document.getElementById('remember').checked) {
+                        localStorage.setItem('rememberedEmail', email);
+                    }
+                    
+                    // Redirect to dashboard or home page after 1.5 seconds
+                    setTimeout(() => {
+                        // Redirect to dashboard page
+                        window.location.href = '/dashboard.html';
+                    }, 1500);
+                    
+                    console.log('Login successful:', { 
+                        user: data.user.email, 
+                        database: supabaseConfig.name 
+                    });
+                } else {
+                    // Reset button state
+                    loginBtn.classList.remove('loading');
+                    loginBtn.textContent = 'Sign In';
+                    showErrorMessage('Login failed. Please check your credentials.');
+                }
+            } catch (err) {
                 // Reset button state
                 loginBtn.classList.remove('loading');
                 loginBtn.textContent = 'Sign In';
                 
-                // For demo purposes, show success message
-                showSuccessMessage('Login successful! Redirecting...');
-                
-                // In a real application, you would:
-                // 1. Send data to your authentication API
-                // 2. Handle the response
-                // 3. Redirect to dashboard or show error
-                
-                console.log('Login attempt:', { email, password: '***' });
-            }, 2000);
+                showErrorMessage('Network error. Please try again.');
+                console.error('Network error:', err);
+            }
         }
     });
 
@@ -162,6 +221,10 @@ document.addEventListener('DOMContentLoaded', function() {
         showMessage(message, 'info');
     }
 
+    function showErrorMessage(message) {
+        showMessage(message, 'error');
+    }
+
     function showMessage(message, type) {
         // Remove existing messages
         const existingMessage = document.querySelector('.message');
@@ -191,16 +254,20 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (type === 'info') {
             messageDiv.style.backgroundColor = '#3b82f6';
             messageDiv.style.color = 'white';
+        } else if (type === 'error') {
+            messageDiv.style.backgroundColor = '#ef4444';
+            messageDiv.style.color = 'white';
         }
 
         document.body.appendChild(messageDiv);
 
-        // Auto remove after 3 seconds
+        // Auto remove after 4 seconds for errors, 3 seconds for others
+        const timeout = type === 'error' ? 4000 : 3000;
         setTimeout(() => {
             if (messageDiv.parentNode) {
                 messageDiv.remove();
             }
-        }, 3000);
+        }, timeout);
     }
 
     // Remember me functionality

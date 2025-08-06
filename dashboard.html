@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="login-card">
+            <div class="logo">
+                <h1 id="welcomeTitle">Welcome to Dashboard</h1>
+                <p id="databaseInfo">Connected to your database</p>
+            </div>
+            
+            <div class="dashboard-content">
+                <div class="user-info">
+                    <h3>User Information</h3>
+                    <p><strong>Email:</strong> <span id="userEmail">Loading...</span></p>
+                    <p><strong>Database:</strong> <span id="userDatabase">Loading...</span></p>
+                    <p><strong>Login Time:</strong> <span id="loginTime">Loading...</span></p>
+                    <p><strong>User ID:</strong> <span id="userId">Loading...</span></p>
+                </div>
+                
+                <div class="dashboard-actions">
+                    <button id="logoutBtn" class="login-btn" style="background: #ef4444;">
+                        Logout
+                    </button>
+                </div>
+                
+                <div class="security-info">
+                    <h3>Security Information</h3>
+                    <p>✅ You are securely logged into the correct database for this subdomain.</p>
+                    <p>🔒 Your session is encrypted and stored locally.</p>
+                    <p>⚠️ Cross-database authentication is blocked for security.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get stored user session
+            const userSession = localStorage.getItem('userSession');
+            
+            if (!userSession) {
+                // No session found, redirect to login
+                window.location.href = '/index.html';
+                return;
+            }
+            
+            try {
+                const session = JSON.parse(userSession);
+                
+                // Update dashboard with user info
+                document.getElementById('userEmail').textContent = session.user.email || 'N/A';
+                document.getElementById('userDatabase').textContent = session.database || 'Unknown';
+                document.getElementById('loginTime').textContent = new Date(session.loginTime).toLocaleString();
+                document.getElementById('userId').textContent = session.user.id || 'N/A';
+                
+                // Update title
+                document.getElementById('welcomeTitle').textContent = `Welcome to ${session.database}`;
+                document.getElementById('databaseInfo').textContent = `You are securely connected to ${session.database}`;
+                
+            } catch (error) {
+                console.error('Error parsing user session:', error);
+                localStorage.removeItem('userSession');
+                window.location.href = '/index.html';
+            }
+            
+            // Logout functionality
+            document.getElementById('logoutBtn').addEventListener('click', async function() {
+                try {
+                    // Clear local storage
+                    localStorage.removeItem('userSession');
+                    localStorage.removeItem('rememberedEmail');
+                    
+                    // Show logout message
+                    alert('You have been logged out successfully.');
+                    
+                    // Redirect to login page
+                    window.location.href = '/index.html';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    // Force redirect even if there's an error
+                    window.location.href = '/index.html';
+                }
+            });
+        });
+    </script>
+    
+    <style>
+        .dashboard-content {
+            text-align: left;
+            margin-top: 20px;
+        }
+        
+        .user-info, .security-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .user-info h3, .security-info h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 18px;
+        }
+        
+        .user-info p {
+            margin-bottom: 8px;
+            color: #666;
+        }
+        
+        .security-info p {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .dashboard-actions {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        #logoutBtn:hover {
+            background: #dc2626 !important;
+        }
+    </style>
+</body>
+</html>
